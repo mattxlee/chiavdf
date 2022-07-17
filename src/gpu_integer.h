@@ -5,7 +5,7 @@ template<class int_type> int_type add_carry(int_type a, int_type b, int carry_in
     assert(carry_in==0 || carry_in==1);
     uint128 res=uint128(a) + uint128(b) + uint128(carry_in);
 
-    carry_out=int(res >> (sizeof(int_type)*8));
+    carry_out=uint64(res >> (sizeof(int_type)*8));
     assert(carry_out==0 || carry_out==1);
 
     return int_type(res);
@@ -15,7 +15,7 @@ template<class int_type> int_type sub_carry(int_type a, int_type b, int carry_in
     assert(carry_in==0 || carry_in==1);
     uint128 res=uint128(a) - uint128(b) - uint128(carry_in);
 
-    carry_out=int(res >> (sizeof(int_type)*8)) & 1;
+    carry_out=uint64(res >> (sizeof(int_type)*8)) & 1;
     assert(carry_out==0 || carry_out==1);
 
     return int_type(res);

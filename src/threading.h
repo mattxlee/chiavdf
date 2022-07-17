@@ -5,10 +5,10 @@
 #include <atomic>
 
 //mp_limb_t is an unsigned integer
-static_assert(sizeof(mp_limb_t)==8, "");
-
-static_assert(sizeof(unsigned long int)==8, "");
-static_assert(sizeof(long int)==8, "");
+// static_assert(sizeof(mp_limb_t)==8, "");
+//
+// static_assert(sizeof(unsigned long int)==8, "");
+// static_assert(sizeof(long int)==8, "");
 
 static uint64 get_time_cycles() {
     // Returns the time in EDX:EAX.

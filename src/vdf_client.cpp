@@ -1,8 +1,8 @@
-#include <boost/asio.hpp>
+#include <asio.hpp>
 #include "vdf.h"
 #include <atomic>
 
-using boost::asio::ip::tcp;
+using asio::ip::tcp;
 
 const int max_length = 2048;
 std::mutex socket_mutex;
@@ -45,8 +45,8 @@ void WriteProof(uint64_t iteration, Proof& result, tcp::socket& sock) {
     PrintInfo("Sending proof");
     {
         std::lock_guard<std::mutex> lock(socket_mutex);
-        boost::asio::write(sock, boost::asio::buffer(int_bytes, 4));
-        boost::asio::write(sock, boost::asio::buffer(str_result.c_str(), str_result.size()));
+        asio::write(sock, asio::buffer(int_bytes, 4));
+        asio::write(sock, asio::buffer(str_result.c_str(), str_result.size()));
     }
     PrintInfo("Sent proof");
 }
@@ -81,23 +81,23 @@ void CreateAndWriteProofTwoWeso(integer& D, form f, uint64_t iters, TwoWesolowsk
 uint8_t initial_form_s[BQFC_FORM_SIZE];
 
 void InitSession(tcp::socket& sock) {
-    boost::system::error_code error;
+    asio::error_code error;
 
     memset(disc,0x00,sizeof(disc)); // For null termination
     memset(disc_size,0x00,sizeof(disc_size)); // For null termination
 
-    boost::asio::read(sock, boost::asio::buffer(disc_size, 3), error);
+    asio::read(sock, asio::buffer(disc_size, 3), error);
     disc_int_size = atoi(disc_size);
-    boost::asio::read(sock, boost::asio::buffer(disc, disc_int_size), error);
+    asio::read(sock, asio::buffer(disc, disc_int_size), error);
 
     char form_size;
-    boost::asio::read(sock, boost::asio::buffer(&form_size, 1), error);
-    boost::asio::read(sock, boost::asio::buffer(initial_form_s, form_size), error);
+    asio::read(sock, asio::buffer(&form_size, 1), error);
+    asio::read(sock, asio::buffer(initial_form_s, form_size), error);
 
-    if (error == boost::asio::error::eof)
+    if (error == asio::error::eof)
         return ; // Connection closed cleanly by peer.
     else if (error)
-        throw boost::system::system_error(error); // Some other error.
+        throw asio::system_error(error); // Some other error.
 
     if (getenv( "warn_on_corruption_in_production" )!=nullptr) {
         warn_on_corruption_in_production=true;
@@ -115,16 +115,16 @@ void InitSession(tcp::socket& sock) {
 void FinishSession(tcp::socket& sock) {
     try {
         // Tell client I've stopped everything, wait for ACK and close.
-        boost::system::error_code error;
+        asio::error_code error;
 
         PrintInfo("Stopped everything! Ready for the next challenge.");
 
         std::lock_guard<std::mutex> lock(socket_mutex);
-        boost::asio::write(sock, boost::asio::buffer("STOP", 4));
+        asio::write(sock, asio::buffer("STOP", 4));
 
         char ack[5];
         memset(ack,0x00,sizeof(ack));
-        boost::asio::read(sock, boost::asio::buffer(ack, 3), error);
+        asio::read(sock, asio::buffer(ack, 3), error);
         assert (strncmp(ack, "ACK", 3) == 0);
     } catch (std::exception& e) {
         PrintInfo("Exception in thread: " + to_string(e.what()));
@@ -132,13 +132,13 @@ void FinishSession(tcp::socket& sock) {
 }
 
 uint64_t ReadIteration(tcp::socket& sock) {
-    boost::system::error_code error;
+    asio::error_code error;
     char data[20];
     memset(data, 0, sizeof(data));
-    boost::asio::read(sock, boost::asio::buffer(data, 2), error);
+    asio::read(sock, asio::buffer(data, 2), error);
     int size = (data[0] - '0') * 10 + (data[1] - '0');
     memset(data, 0, sizeof(data));
-    boost::asio::read(sock, boost::asio::buffer(data, size), error);
+    asio::read(sock, asio::buffer(data, size), error);
     uint64_t iters = 0;
     for (int i = 0; i < size; i++)
         iters = iters * 10 + data[i] - '0';
@@ -166,7 +166,7 @@ void SessionFastAlgorithm(tcp::socket& sock) {
         pm.start();
 
         // Tell client that I'm ready to get the challenges.
-        boost::asio::write(sock, boost::asio::buffer("OK", 2));
+        asio::write(sock, asio::buffer("OK", 2));
 
         while (!stopped) {
             uint64_t iters = ReadIteration(sock);
@@ -201,7 +201,7 @@ void SessionOneWeso(tcp::socket& sock) {
         PrintInfo("Discriminant = " + to_string(D.impl));
         form f = DeserializeForm(D, initial_form_s, sizeof(initial_form_s));
         // Tell client that I'm ready to get the challenges.
-        boost::asio::write(sock, boost::asio::buffer("OK", 2));
+        asio::write(sock, asio::buffer("OK", 2));
 
         uint64_t iter = ReadIteration(sock);
         if (iter == 0) {
@@ -238,7 +238,7 @@ void SessionTwoWeso(tcp::socket& sock) {
         form f = DeserializeForm(D, initial_form_s, sizeof(initial_form_s));
 
         // Tell client that I'm ready to get the challenges.
-        boost::asio::write(sock, boost::asio::buffer("OK", 2));
+        asio::write(sock, asio::buffer("OK", 2));
 
         std::atomic<bool> stopped(false);
         std::atomic<bool> stop_vector[100];
@@ -326,19 +326,19 @@ int main(int argc, char* argv[]) try
       gcd_128_max_iter=2;
     }
 
-    boost::asio::io_service io_service;
+    asio::io_service io_service;
 
     tcp::resolver resolver(io_service);
-    tcp::resolver::query query(tcp::v6(), argv[1], argv[2], boost::asio::ip::resolver_query_base::v4_mapped);
+    tcp::resolver::query query(tcp::v6(), argv[1], argv[2], asio::ip::resolver_query_base::v4_mapped);
     tcp::resolver::iterator iterator = resolver.resolve(query);
 
     tcp::socket s(io_service);
-    boost::asio::connect(s, iterator);
+    asio::connect(s, iterator);
     fast_algorithm = false;
     two_weso = false;
-    boost::system::error_code error;
+    asio::error_code error;
     char prover_type_buf[5];
-    boost::asio::read(s, boost::asio::buffer(prover_type_buf, 1), error);
+    asio::read(s, asio::buffer(prover_type_buf, 1), error);
     // Check for "S" (simple weso), "N" (n-weso), or "T" (2-weso)
     if (prover_type_buf[0] == 'S') {
         SessionOneWeso(s);

@@ -1044,7 +1044,11 @@ void repeated_square_fast_work(square_state_type &square_state,bool is_slave, ui
     #ifdef ENABLE_TRACK_CYCLES
         {
             if (is_slave) {
+#if defined _WIN32
+                _sleep(1);
+#else
                 sleep(1);
+#endif
             }
 
             print( "track cycles is_slave:", is_slave );

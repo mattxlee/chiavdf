@@ -50,14 +50,11 @@
 #include "util.h"
 #include "callback.h"
 #include "fast_storage.h"
-#include <boost/asio.hpp>
 
 #include <atomic>
 #include <optional>
 
 bool warn_on_corruption_in_production=false;
-
-using boost::asio::ip::tcp;
 
 struct akashnil_form {
     // y = ax^2 + bxy + y^2

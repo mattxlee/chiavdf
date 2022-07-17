@@ -27,6 +27,8 @@ typedef __int128 int128;
 #define USED __attribute__((used))
 #else
 #include "uint128_t/uint128_t.h"
+using uint128 = uint128_t;
+using int128 = uint128_t;
 #define USED
 #endif
 #include <cassert>

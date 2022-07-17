@@ -51,5 +51,16 @@ std::copy(result.begin(), result.end(), arr);
         assertm(P.prime(), "P should be psuedoprime");
     }
 
+    static const char *SZ_CHALLENGE = "9159bc7838880dcf826ba5fd7f5b693f203c01e29070ffa4eb1a73b727e09d84";
+    auto challenge = HexToBytes(SZ_CHALLENGE);
+    static const char *SZ_VDF_Y =
+        "0000e16a31edf6070934cacf78d3c3139e6986b7cebd0a45b996720fc916a163803a9c73d43b05c0835e8f2e4c52b2e10ae5623f7c1d5b98db"
+        "2fc13b140b4c6035080f1b12cfe429abcee3912844319f2f81858d7ed4f7a6a108cf14f4a71090a1130201";
+    auto D = CreateDiscriminant(challenge, 1024);
+    auto form_y_data = HexToBytes(SZ_VDF_Y);
+
+    std::cout << "deserializing form: " << SZ_VDF_Y << std::endl;
+    auto form_y = DeserializeForm(D, form_y_data.data(), form_y_data.size());
+
     return 0;
 }

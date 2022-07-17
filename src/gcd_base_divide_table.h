@@ -21,7 +21,7 @@ int64 divide_table_lookup(int64 index) {
     uint128 res = (~uint128(0)) / uint128(max(uint64(index), uint64(1)));
     res>>=64;
 
-    return res;
+    return (uint64)res;
 }
 
 int64 divide_table_64(int64 a, int64 b, int64& q) {
@@ -64,14 +64,14 @@ int64 divide_table(int64 a, int64 b, int64& q) {
     int64 b_approx = b >> b_shift;
     int64 b_approx_inverse = divide_table_lookup(b_approx);
 
-    q = (int128(a)*int128(b_approx_inverse)) >> 64; //high part of product
+    q = uint64((int128(a)*int128(b_approx_inverse)) >> 64); //high part of product
     q >>= b_shift;
 
     int128 qb_128=int128(q)*int128(b);
-    int64 qb_64=int64(qb_128);
+    int64 qb_64=uint64(qb_128);
 
     int128 r_128=int128(a)-int128(qb_64);
-    int64 r_64=int64(r_128);
+    int64 r_64=uint64(r_128);
 
     //int128 r=int128(a)-int128(q)*int128(b);
     //if (uint128(r)>=b) {
@@ -87,7 +87,7 @@ int64 divide_table(int64 a, int64 b, int64& q) {
         assert(r_64==int64(r_2));
     }
 
-    int64 r=r_2;
+    int64 r=(uint64)r_2;
     if (invalid_2) {
         r=divide_table_64(a, b, q);
     } else {
