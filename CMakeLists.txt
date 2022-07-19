@@ -4,6 +4,8 @@ project(chiavdf)
 
 enable_language(C CXX ASM)
 
+set(CMAKE_CXX_STANDARD 17)
+
 execute_process(COMMAND uname OUTPUT_VARIABLE UNAME)
 
 find_package(Threads REQUIRED)
@@ -95,7 +97,6 @@ add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/avx512_asm_compiled.s COMMAND ${CO
 function(compile_target TARGET_EXE_NAME)
     add_executable(${TARGET_EXE_NAME} src/${TARGET_EXE_NAME}.cpp ${LZCNT} ${CMAKE_BINARY_DIR}/asm_compiled.s ${CMAKE_BINARY_DIR}/avx2_asm_compiled.s ${CMAKE_BINARY_DIR}/avx512_asm_compiled.s ${UINT128_SRCS})
     add_dependencies(${TARGET_EXE_NAME} ASIO)
-    target_compile_features(${TARGET_EXE_NAME} PRIVATE cxx_std_17)
     target_compile_definitions(${TARGET_EXE_NAME} PRIVATE VDF_MODE=0 FAST_MACHINE=1)
     if (UNAME STREQUAL "Darwin")
         target_compile_definitions(${TARGET_EXE_NAME} PRIVATE CHIAOSX=1)
