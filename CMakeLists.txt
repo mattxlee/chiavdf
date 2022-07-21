@@ -27,26 +27,37 @@ endif()
 # Setup the way to retrieve GMP source
 include(ExternalProject)
 
-set(GMP_PREFIX_DIR ${CMAKE_BINARY_DIR}/gmp)
-set(GMP_SOURCE_DIR ${GMP_PREFIX_DIR}/src)
-ExternalProject_Add(GMP
-    URL https://gmplib.org/download/gmp/gmp-6.2.1.tar.lz
-    URL_HASH SHA256=2c7f4f0d370801b2849c48c9ef3f59553b5f1d3791d070cffb04599f9fc67b41
-    SOURCE_DIR "${GMP_SOURCE_DIR}"
-    CONFIGURE_COMMAND ./configure --enable-cxx --enable-fat --prefix=${GMP_PREFIX_DIR} --host=${TOOLCHAIN_PREFIX} CC_FOR_BUILD=gcc
-    TEST_COMMAND ""
-    BUILD_IN_SOURCE 1
-    PATCH_COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/gmp-patch-6.2.1/compat.c ${GMP_SOURCE_DIR}/compat.c && cp ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/gmp-patch-6.2.1/longlong.h ${GMP_SOURCE_DIR}/longlong.h && cp ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/gmp-patch-6.2.1/mpz/inp_raw.c ${GMP_SOURCE_DIR}/mpz/inp_raw.c
-    )
-set(GMP_INCLUDE_DIR ${GMP_PREFIX_DIR}/include)
-set(GMPXX_INCLUDE_DIR ${GMP_PREFIX_DIR}/include)
-
-if (WIN32)
-    set(GMP_LIBRARIES ${GMP_PREFIX_DIR}/lib/libgmp.a)
-    set(GMPXX_LIBRARIES ${GMP_PREFIX_DIR}/lib/libgmpxx.a)
-else()
+if (UNIX)
+    set(GMP_PREFIX_DIR ${CMAKE_BINARY_DIR}/gmp)
+    set(GMP_SOURCE_DIR ${GMP_PREFIX_DIR}/src)
+    ExternalProject_Add(GMP
+        URL https://gmplib.org/download/gmp/gmp-6.2.1.tar.lz
+        URL_HASH SHA256=2c7f4f0d370801b2849c48c9ef3f59553b5f1d3791d070cffb04599f9fc67b41
+        SOURCE_DIR "${GMP_SOURCE_DIR}"
+        CONFIGURE_COMMAND ./configure --enable-cxx --enable-fat --prefix=${GMP_PREFIX_DIR} --host=${TOOLCHAIN_PREFIX} CC_FOR_BUILD=gcc
+        TEST_COMMAND ""
+        BUILD_IN_SOURCE 1
+        PATCH_COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/gmp-patch-6.2.1/compat.c ${GMP_SOURCE_DIR}/compat.c && cp ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/gmp-patch-6.2.1/longlong.h ${GMP_SOURCE_DIR}/longlong.h && cp ${CMAKE_CURRENT_SOURCE_DIR}/src/lib/gmp-patch-6.2.1/mpz/inp_raw.c ${GMP_SOURCE_DIR}/mpz/inp_raw.c
+        )
+    set(GMP_INCLUDE_DIR ${GMP_PREFIX_DIR}/include)
+    set(GMPXX_INCLUDE_DIR ${GMP_PREFIX_DIR}/include)
     set(GMP_LIBRARIES ${GMP_PREFIX_DIR}/lib/libgmp.so)
     set(GMPXX_LIBRARIES ${GMP_PREFIX_DIR}/lib/libgmpxx.so)
+elseif(WIN32)
+    set(GMP_PREFIX_DIR ${CMAKE_BINARY_DIR}/gmp)
+    set(GMP_SOURCE_DIR ${GMP_PREFIX_DIR}/src)
+    ExternalProject_Add(GMP
+        GIT_REPOSITORY https://github.com/Chia-Network/mpir_gc_x64
+        GIT_TAG c4faca3adea3ea2129f6c1173e9a2a8b64e270e2
+        SOURCE_DIR "${GMP_SOURCE_DIR}"
+        CONFIGURE_COMMAND ""
+        BUILD_COMMAND ""
+        INSTALL_COMMAND cp ${GMP_SOURCE_DIR}/mpir_sandybridge.dll ${CMAKE_BINARY_DIR} && cp ${GMP_SOURCE_DIR}/mpir_broadwell_avx.dll ${CMAKE_BINARY_DIR} && cp ${GMP_SOURCE_DIR}/mpir_broadwell.dll ${CMAKE_BINARY_DIR} && cp ${GMP_SOURCE_DIR}/mpir.dll ${CMAKE_BINARY_DIR} && cp ${GMP_SOURCE_DIR}/mpir_bulldozer.dll ${CMAKE_BINARY_DIR} && cp ${GMP_SOURCE_DIR}/mpir_gc.dll ${CMAKE_BINARY_DIR} && cp ${GMP_SOURCE_DIR}/mpir_skylake_avx.dll ${CMAKE_BINARY_DIR} && cp ${GMP_SOURCE_DIR}/mpir_piledriver.dll ${CMAKE_BINARY_DIR} && cp ${GMP_SOURCE_DIR}/mpir_haswell.dll ${CMAKE_BINARY_DIR}
+        TEST_COMMAND ""
+        )
+    set(GMP_INCLUDE_DIR ${GMP_SOURCE_DIR})
+    set(GMPXX_INCLUDE_DIR ${GMP_SOURCE_DIR})
+    set(GMP_LIBRARIES ${GMP_SOURCE_DIR}/mpir.lib)
 endif()
 
 # Setup ASIO
