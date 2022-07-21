@@ -84,6 +84,7 @@ add_executable(verifier_test
     src/verifier_test.cpp
     ${LZCNT}
 )
+add_dependencies(verifier_test GMP)
 target_link_libraries(verifier_test PRIVATE ${GMP_LIBRARIES} ${GMPXX_LIBRARIES} Threads::Threads)
 
 # compile_asm
@@ -107,7 +108,7 @@ add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/avx512_asm_compiled.s COMMAND ${CO
 # targets require asm files
 function(compile_target TARGET_EXE_NAME)
     add_executable(${TARGET_EXE_NAME} src/${TARGET_EXE_NAME}.cpp ${LZCNT} ${CMAKE_BINARY_DIR}/asm_compiled.s ${CMAKE_BINARY_DIR}/avx2_asm_compiled.s ${CMAKE_BINARY_DIR}/avx512_asm_compiled.s ${UINT128_SRCS})
-    add_dependencies(${TARGET_EXE_NAME} ASIO)
+    add_dependencies(${TARGET_EXE_NAME} ASIO GMP)
     target_compile_definitions(${TARGET_EXE_NAME} PRIVATE VDF_MODE=0 FAST_MACHINE=1)
     if (UNAME STREQUAL "Darwin")
         target_compile_definitions(${TARGET_EXE_NAME} PRIVATE CHIAOSX=1)
