@@ -1,6 +1,7 @@
 #include <asio.hpp>
 #include "vdf.h"
 #include <atomic>
+#include <string>
 
 using asio::ip::tcp;
 
@@ -13,9 +14,16 @@ int process_number;
 int segments = 8;
 int thread_count = 3;
 
-void PrintInfo(std::string input) {
-    std::cout << "VDF Client: " << input << "\n";
-    std::cout << std::flush;
+template <typename S, typename T>
+void PrintSingle(S& s, T&& val) {
+    s << std::forward<T>(val);
+}
+
+template <typename... T>
+void PrintInfo(T&&... vals) {
+    std::cout << "VDF Client: ";
+    (PrintSingle(std::cout, std::forward<T>(vals)), ...);
+    std::cout << std::endl << std::flush;
 }
 
 char disc[350];
@@ -88,16 +96,23 @@ void InitSession(tcp::socket& sock) {
 
     asio::read(sock, asio::buffer(disc_size, 3), error);
     disc_int_size = atoi(disc_size);
+    PrintInfo("read disc_int_size=", disc_int_size);
     asio::read(sock, asio::buffer(disc, disc_int_size), error);
+    PrintInfo("read total ", disc_int_size, " bytes");
 
     char form_size;
     asio::read(sock, asio::buffer(&form_size, 1), error);
+    PrintInfo("read form_size=", static_cast<int>(form_size));
     asio::read(sock, asio::buffer(initial_form_s, form_size), error);
+    PrintInfo("read total ", static_cast<int>(form_size), " bytes");
 
-    if (error == asio::error::eof)
+    if (error == asio::error::eof) {
+        PrintInfo("connection lost");
         return ; // Connection closed cleanly by peer.
-    else if (error)
+    } else if (error) {
+        PrintInfo("error from server:", error.message());
         throw asio::system_error(error); // Some other error.
+    }
 
     if (getenv( "warn_on_corruption_in_production" )!=nullptr) {
         warn_on_corruption_in_production=true;
@@ -110,6 +125,8 @@ void InitSession(tcp::socket& sock) {
     }
     assert(is_vdf_test); //assertions should be disabled in VDF_MODE==0
     set_rounding_mode();
+
+    PrintInfo("session is initialized");
 }
 
 void FinishSession(tcp::socket& sock) {
@@ -126,6 +143,8 @@ void FinishSession(tcp::socket& sock) {
         memset(ack,0x00,sizeof(ack));
         asio::read(sock, asio::buffer(ack, 3), error);
         assert (strncmp(ack, "ACK", 3) == 0);
+
+        PrintInfo("received ACK");
     } catch (std::exception& e) {
         PrintInfo("Exception in thread: " + to_string(e.what()));
     }
@@ -136,9 +155,15 @@ uint64_t ReadIteration(tcp::socket& sock) {
     char data[20];
     memset(data, 0, sizeof(data));
     asio::read(sock, asio::buffer(data, 2), error);
+    if (data[0] == 0 || data[1] == 0) {
+        throw std::runtime_error("invalid size of iters");
+    }
+    PrintInfo("read 2 bytes for the size of iters: ", data[0], data[1]);
     int size = (data[0] - '0') * 10 + (data[1] - '0');
+    PrintInfo("iters size=", size);
     memset(data, 0, sizeof(data));
     asio::read(sock, asio::buffer(data, size), error);
+    PrintInfo("read total ", size, " bytes");
     uint64_t iters = 0;
     for (int i = 0; i < size; i++)
         iters = iters * 10 + data[i] - '0';
@@ -203,7 +228,10 @@ void SessionOneWeso(tcp::socket& sock) {
         // Tell client that I'm ready to get the challenges.
         asio::write(sock, asio::buffer("OK", 2));
 
+        PrintInfo("ready to read iters");
+
         uint64_t iter = ReadIteration(sock);
+        PrintInfo("iter=", iter);
         if (iter == 0) {
             FinishSession(sock);
             return;
@@ -314,7 +342,7 @@ int gcd_128_max_iter=3;
 int main(int argc, char* argv[]) try
 {
     init_gmp();
-    if (argc != 4)
+    if (argc != 3)
     {
       std::cerr << "Usage: ./vdf_client <host> <port>\n";
       return 1;
@@ -341,16 +369,20 @@ int main(int argc, char* argv[]) try
     asio::read(s, asio::buffer(prover_type_buf, 1), error);
     // Check for "S" (simple weso), "N" (n-weso), or "T" (2-weso)
     if (prover_type_buf[0] == 'S') {
+        PrintInfo("type: S");
         SessionOneWeso(s);
     }
     if (prover_type_buf[0] == 'N') {
+        PrintInfo("type: N");
         fast_algorithm = true;
         SessionFastAlgorithm(s);
     }
     if (prover_type_buf[0] == 'T') {
+        PrintInfo("type: T");
         two_weso = true;
         SessionTwoWeso(s);
     }
+    PrintInfo("exit.");
     return 0;
 }
 catch (std::exception& e) {
